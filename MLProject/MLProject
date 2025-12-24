@@ -1,0 +1,10 @@
+name: Heart_Disease_Project
+
+conda_env: conda.yaml
+
+entry_points:
+  main:
+    parameters:
+      train_data: {type: string, default: "data/train.csv"}
+      test_data: {type: string, default: "data/test.csv"}
+    command: "python modelling.py --train_data {train_data} --test_data {test_data}"
