@@ -6,17 +6,22 @@ import seaborn as sns
 import dagshub
 import sys
 import argparse
-from sklearn.model_selection import train_test_split, GridSearchCV
+import os
+from sklearn.model_selection import GridSearchCV
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, confusion_matrix
 
+# --- DEFINISI FUNGSI ---
 def load_data(file_path):
+    # Pastikan path ini benar sesuai lokasi file
+    print(f"Mencoba membaca data dari: {file_path}")
     df = pd.read_csv(file_path)
-
+    
+    # Pembersih baris kosong
     initial_shape = df.shape
     df = df.dropna()
     if df.shape != initial_shape:
-        print(f"Warning: {initial_shape[0] - df.shape[0]} baris kosong (NaN) dibuang dari {file_path}")
+        print(f"Warning: {initial_shape[0] - df.shape[0]} baris kosong dibuang.")
     
     X = df.drop('condition', axis=1)
     y = df['condition']
@@ -54,47 +59,45 @@ def plot_feature_importance(model, feature_names):
     plt.savefig("feature_importance.png")
     plt.close()
 
+# --- MAIN BLOCK ---
 if __name__ == "__main__":
-    import os  # Pastikan import os ada di atas file atau di sini
-    
+    # Parsing argumen
     parser = argparse.ArgumentParser()
     parser.add_argument("--train_data", type=str, default="data/train.csv")
     parser.add_argument("--test_data", type=str, default="data/test.csv")
     args = parser.parse_args()
 
-    # --- LOGIKA BARU: Cek apakah sedang di CI/CD atau Laptop ---
+    # Logika Cerdas: Cek apakah di CI/CD atau Lokal
     if "MLFLOW_TRACKING_URI" in os.environ:
-        # Jika di GitHub Actions (karena kita set env var di YAML), skip login manual
-        print("CI Environment detected. Menggunakan Environment Variables.")
+        print("CI Environment detected. Menggunakan Env Vars.")
         mlflow.set_tracking_uri(os.environ["MLFLOW_TRACKING_URI"])
     else:
-        # Jika di Laptop lokal, jalankan init otomatis
         print("Local Environment detected. Menjalankan dagshub.init()...")
         dagshub.init(repo_owner='Izukunn', 
                      repo_name='Eksperimen_SML_faiz_muhamad_al_ghifari_rc9k', 
                      mlflow=True)
-    # -----------------------------------------------------------
     
+    # Set Eksperimen (Sesuai YAML kamu)
     mlflow.set_experiment("Automated_CI_Experiment")
 
-    print(f"Loading data from: {args.train_data} and {args.test_data}")
-    
+    # Load Data
     try:
         X_train, y_train = load_data(args.train_data)
         X_test, y_test = load_data(args.test_data)
     except FileNotFoundError as e:
-        print(e)
+        print(f"Error: File tidak ditemukan. {e}")
         sys.exit(1)
 
-    with mlflow.start_run(run_name="RandomForest_Tuning"):
-        print("Training model dengan tuning...")
+    # Start Run
+    with mlflow.start_run(run_name="CI_Run"):
+        print("Mulai Training...")
         best_model, best_params = train_with_tuning(X_train, y_train)
         
         y_pred = best_model.predict(X_test)
         acc = accuracy_score(y_test, y_pred)
         print(f"Accuracy: {acc}")
 
-        # Logging
+        # Logging ke DagsHub
         mlflow.log_params(best_params)
         mlflow.log_metric("accuracy", acc)
         mlflow.sklearn.log_model(best_model, "model")
