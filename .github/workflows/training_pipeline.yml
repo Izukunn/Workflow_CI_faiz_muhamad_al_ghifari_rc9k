@@ -27,9 +27,7 @@ jobs:
         MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
         MLFLOW_TRACKING_URI: https://dagshub.com/Izukunn/Eksperimen_SML_faiz_muhamad_al_ghifari_rc9k.mlflow
       run: |
-        # Masuk ke folder MLProject
         cd MLProject
-        # Jalankan project. Pastikan output sukses.
         mlflow run . --env-manager=local --experiment-name "Automated_CI_Experiment"
 
     - name: Login to Docker Hub
@@ -40,18 +38,12 @@ jobs:
 
     - name: Build and Push Docker Image
       run: |
-        # Syarat Advance: Menggunakan mlflow build-docker atau manual build
-        # Karena mlflow build-docker butuh setup kompleks, kita build manual image berisi model
-        
-        # 1. Buat Dockerfile sederhana
         echo "FROM python:3.9-slim" > Dockerfile
         echo "WORKDIR /app" >> Dockerfile
         echo "COPY MLProject/ /app/" >> Dockerfile
-        echo "RUN pip install -r /app/requirements.txt" >> Dockerfile # Pastikan ada requirements.txt di folder MLProject!
+        echo "RUN pip install -r /app/requirements.txt" >> Dockerfile
         echo "CMD [\"python\", \"modelling.py\"]" >> Dockerfile
         
-        # 2. Build Image
         docker build -t ${{ secrets.DOCKER_USERNAME }}/submission-mlops:latest .
         
-        # 3. Push Image
         docker push ${{ secrets.DOCKER_USERNAME }}/submission-mlops:latest

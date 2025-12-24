@@ -11,13 +11,10 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, confusion_matrix
 
-# --- DEFINISI FUNGSI ---
 def load_data(file_path):
-    # Pastikan path ini benar sesuai lokasi file
     print(f"Mencoba membaca data dari: {file_path}")
     df = pd.read_csv(file_path)
     
-    # Pembersih baris kosong
     initial_shape = df.shape
     df = df.dropna()
     if df.shape != initial_shape:
@@ -59,15 +56,12 @@ def plot_feature_importance(model, feature_names):
     plt.savefig("feature_importance.png")
     plt.close()
 
-# --- MAIN BLOCK ---
 if __name__ == "__main__":
-    # Parsing argumen
     parser = argparse.ArgumentParser()
     parser.add_argument("--train_data", type=str, default="data/train.csv")
     parser.add_argument("--test_data", type=str, default="data/test.csv")
     args = parser.parse_args()
 
-    # Logika Cerdas: Cek apakah di CI/CD atau Lokal
     if "MLFLOW_TRACKING_URI" in os.environ:
         print("CI Environment detected. Menggunakan Env Vars.")
         mlflow.set_tracking_uri(os.environ["MLFLOW_TRACKING_URI"])
@@ -77,10 +71,8 @@ if __name__ == "__main__":
                      repo_name='Eksperimen_SML_faiz_muhamad_al_ghifari_rc9k', 
                      mlflow=True)
     
-    # Set Eksperimen (Sesuai YAML kamu)
     mlflow.set_experiment("Automated_CI_Experiment")
 
-    # Load Data
     try:
         X_train, y_train = load_data(args.train_data)
         X_test, y_test = load_data(args.test_data)
@@ -88,7 +80,6 @@ if __name__ == "__main__":
         print(f"Error: File tidak ditemukan. {e}")
         sys.exit(1)
 
-    # Start Run
     with mlflow.start_run(run_name="CI_Run"):
         print("Mulai Training...")
         best_model, best_params = train_with_tuning(X_train, y_train)
@@ -97,7 +88,6 @@ if __name__ == "__main__":
         acc = accuracy_score(y_test, y_pred)
         print(f"Accuracy: {acc}")
 
-        # Logging ke DagsHub
         mlflow.log_params(best_params)
         mlflow.log_metric("accuracy", acc)
         mlflow.sklearn.log_model(best_model, "model")
