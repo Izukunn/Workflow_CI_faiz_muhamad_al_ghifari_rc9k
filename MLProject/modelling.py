@@ -55,20 +55,28 @@ def plot_feature_importance(model, feature_names):
     plt.close()
 
 if __name__ == "__main__":
-    # Parsing argumen agar bisa diubah lewat command line
+    import os  # Pastikan import os ada di atas file atau di sini
+    
     parser = argparse.ArgumentParser()
     parser.add_argument("--train_data", type=str, default="data/train.csv")
     parser.add_argument("--test_data", type=str, default="data/test.csv")
     args = parser.parse_args()
 
-    # Init DagsHub
-    dagshub.init(repo_owner='Izukunn', 
-                 repo_name='Eksperimen_SML_faiz_muhamad_al_ghifari_rc9k', 
-                 mlflow=True)
+    # --- LOGIKA BARU: Cek apakah sedang di CI/CD atau Laptop ---
+    if "MLFLOW_TRACKING_URI" in os.environ:
+        # Jika di GitHub Actions (karena kita set env var di YAML), skip login manual
+        print("CI Environment detected. Menggunakan Environment Variables.")
+        mlflow.set_tracking_uri(os.environ["MLFLOW_TRACKING_URI"])
+    else:
+        # Jika di Laptop lokal, jalankan init otomatis
+        print("Local Environment detected. Menjalankan dagshub.init()...")
+        dagshub.init(repo_owner='Izukunn', 
+                     repo_name='Eksperimen_SML_faiz_muhamad_al_ghifari_rc9k', 
+                     mlflow=True)
+    # -----------------------------------------------------------
     
     mlflow.set_experiment("Automated_CI_Experiment")
 
-    # Gunakan path dari argumen
     print(f"Loading data from: {args.train_data} and {args.test_data}")
     
     try:
